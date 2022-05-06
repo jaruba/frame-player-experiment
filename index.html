@@ -1,0 +1,58 @@
+
+<html>
+  <head>
+    <title>Stream</title>
+    <style>
+        html, body, video {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            
+        }
+    </style>
+  </head>
+
+  <body>
+    <script src="./hls.js"></script>
+
+    <center>
+      <video id="video"></video>
+    </center>
+
+    <script>
+        function getParameterByName(name, url = window.location.href) {
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+      var video = document.getElementById('video');
+      if (Hls.isSupported()) {
+        var hls = new Hls({
+          debug: true,
+        });
+        hls.loadSource(getParameterByName('stream'));
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+          video.muted = true;
+          video.play();
+        });
+      }
+      // hls.js is not supported on platforms that do not have Media Source Extensions (MSE) enabled.
+      // When the browser has built-in HLS support (check using `canPlayType`), we can provide an HLS manifest (i.e. .m3u8 URL) directly to the video element through the `src` property.
+      // This is using the built-in support of the plain video element, without using hls.js.
+      else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = getParameterByName('stream');
+        video.addEventListener('canplay', function () {
+          video.play();
+        });
+      }
+    </script>
+  <!-- injected in netlify post processing step -->
+<div style="position: absolute; top: 5px; right: 5px;">
+</div></body>
+</html>
