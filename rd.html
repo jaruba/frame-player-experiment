@@ -42,6 +42,8 @@
 
         // get property change requests from Stremio
 
+        var freezeTime = false;
+
         function getProp(propName, propValue) {
             switch (propName) {
                 case 'paused': {
@@ -52,6 +54,7 @@
                 case 'time': {
                     if (propValue !== null && isFinite(propValue)) {
                         tempTime = parseInt(propValue, 10);
+                        freezeTime = tempTime
                         hls.loadSource(streamUrl + '?t=' + Math.round(tempTime / 1000));
                     }
 
@@ -159,11 +162,17 @@
                 video.onplay = function() {
                     setProp('paused', !!video.paused);
                     updatePausedState();
+                    if (freezeTime)
+                        freezeTime = false;
                 };
                 video.ontimeupdate = function() {
                     var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
                     if (time) {
-                        lastKnownTime = tempTime + Math.floor(time * 1000);
+                        if (freezeTime) {
+                            setProp('time', freezeTime);
+                            return;
+                        }
+                        lastKnownTime = Math.floor(time * 1000);
                         setProp('time', lastKnownTime);
                     }
                     sendBuffered()
