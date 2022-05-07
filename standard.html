@@ -39,6 +39,8 @@
 
         var fragmented = false;
 
+        var restartOnSeek = false;
+
         // send property changes to Stremio
 
         function setProp(propName, propValue) {
@@ -69,6 +71,14 @@
                                 video.src = streamAt;
                             }
                         } else {
+                            if (restartOnSeekArg) {
+                                if (isHls) {
+                                    hls.loadSource(streamUrl);
+                                } else {
+                                    video.src = streamUrl;
+                                }
+                            }
+
                             video.currentTime = parseInt(propValue, 10) / 1000;
                             tempTime = 0;
                         }
@@ -117,6 +127,11 @@
             fragmented = true;
         }
 
+        var restartOnSeekArg = getParameterByName('restartOnSeek')
+
+        if (restartOnSeekArg && restartOnSeekArg === '1') {
+            restartOnSeek = true;
+        }
 
         var bearer = streamUrl.split('/')[4];
 
