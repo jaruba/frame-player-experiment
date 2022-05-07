@@ -133,7 +133,15 @@
 
                 console.log('content-type', contentType);
 
-                if (contentType === 'application/vnd.apple.mpegurl' || contentType === 'text/html; charset=UTF-8')
+                const adHeaderMap = {
+                    'text/html; charset=UTF-8': 'application/vnd.apple.mpegurl',
+                    'application/octet-stream': 'video/mp4',
+                }
+
+                if (adHeaderMap[contentType])
+                    contentType = adHeaderMap[contentType];
+
+                if (contentType === 'application/vnd.apple.mpegurl')
                     isHls = true;
 
                 var streamParts = streamUrl.split('/');
