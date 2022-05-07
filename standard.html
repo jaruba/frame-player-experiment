@@ -73,8 +73,8 @@
                         } else {
                             if (restartOnSeek) {
                                 if (isHls) {
-                                    hls.startLoad(Math.round(parseInt(propValue, 10) / 1000 / 1000))
                                     hls.loadSource(streamUrl);
+                                    hls.startLoad(Math.round(parseInt(propValue, 10) / 1000));
                                 } else {
                                     video.src = streamUrl;
                                 }
