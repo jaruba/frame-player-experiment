@@ -137,7 +137,6 @@
         function updatePausedState() {
             var pausedState = !!video.paused ? 'pause' : 'play'
             var oReq = new XMLHttpRequest();
-            oReq.addEventListener('load', reqListener);
             oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId] + '/' + pausedState);
             oReq.send();
         }
@@ -160,7 +159,6 @@
                 startedInterval = true;
                 setInterval(function() {
                     var oReq = new XMLHttpRequest();
-                    oReq.addEventListener('load', reqListener);
                     oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId] + '/' + lastKnownTime);
                     oReq.send();
                 }, (60 * 1000) /5);
