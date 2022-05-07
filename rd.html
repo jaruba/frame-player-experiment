@@ -162,7 +162,7 @@
                 video.onplay = function() {
                     setProp('paused', !!video.paused);
                     updatePausedState();
-                    if (freezeTime)
+                    if (!video.paused && freezeTime)
                         freezeTime = false;
                 };
                 video.ontimeupdate = function() {
