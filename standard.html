@@ -133,7 +133,7 @@
 
                 console.log('content-type', contentType);
 
-                if (contentType === 'application/vnd.apple.mpegurl')
+                if (contentType === 'application/vnd.apple.mpegurl' || contentType === 'text/html; charset=UTF-8')
                     isHls = true;
 
                 var streamParts = streamUrl.split('/');
