@@ -172,7 +172,7 @@
                             setProp('time', freezeTime);
                             return;
                         }
-                        lastKnownTime = Math.floor(time * 1000);
+                        lastKnownTime = tempTime + Math.floor(time * 1000);
                         setProp('time', lastKnownTime);
                     }
                     sendBuffered()
