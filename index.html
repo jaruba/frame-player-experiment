@@ -125,19 +125,20 @@
         var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
 
         eventer(messageEvent, function(e) {
-            console.log('message event')
+            console.log('message event');
             var key = e.message ? "message" : "data";
             var data = e[key];
             if ((data || {}).propName) {
+                console.log('message event: has prop name');
                 switch (data.propName) {
                     case 'paused': {
-                        console.log('prop1');
+                        console.log('message event: prop1');
                         data.propValue ? video.pause() : video.play();
 
                         break;
                     }
                     case 'time': {
-                        console.log('prop2');
+                        console.log('message event: prop2');
                         if (data.propValue !== null && isFinite(data.propValue)) {
                             video.currentTime = parseInt(data.propValue, 10) / 1000;
                         }
@@ -145,7 +146,7 @@
                         break;
                     }
                     case 'volume': {
-                        console.log('prop3');
+                        console.log('message event: prop3');
                         if (data.propValue !== null && isFinite(data.propValue)) {
                             video.muted = false;
                             video.volume = Math.max(0, Math.min(100, parseInt(data.propValue, 10))) / 100;
@@ -154,12 +155,12 @@
                         break;
                     }
                     case 'muted': {
-                        console.log('prop4');
+                        console.log('message event: prop4');
                         video.muted = !!data.propValue;
                         break;
                     }
                     case 'playbackSpeed': {
-                        console.log('prop5');
+                        console.log('message event: prop5');
                         if (data.propValue !== null && isFinite(data.propValue)) {
                             video.playbackRate = parseFloat(data.propValue);
                         }
