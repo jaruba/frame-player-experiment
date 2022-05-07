@@ -33,6 +33,10 @@
 
         var lastKnownTime = 0;
 
+        var contentType = false;
+
+        var isHls = false;
+
         // send property changes to Stremio
 
         function setProp(propName, propValue) {
@@ -59,7 +63,12 @@
                         freezeTime = tempTime
                         console.log('freeze time: ', freezeTime);
                         console.log('?t=' + Math.round(tempTime / 1000));
-                        hls.loadSource(streamUrl + '?t=' + Math.round(tempTime / 1000));
+                        var streamAt = streamUrl + '?t=' + Math.round(tempTime / 1000);
+                        if (isHls) {
+                            hls.loadSource(streamAt);
+                        } else {
+                            video.src = streamAt;
+                        }
                         setProp('time', freezeTime);
                     }
 
@@ -105,7 +114,17 @@
         http.open('HEAD', streamUrl);
         http.onreadystatechange = function() {
             if (this.readyState === this.DONE) {
-                streamUrl = this.responseURL;
+
+                if (this.responseURL)
+                    streamUrl = this.responseURL;
+
+                if (this.getResponseHeader('content-type'))
+                    contentType = this.getResponseHeader('content-type')
+
+                console.log('content-type', contentType)
+
+                if (contentType === 'application/vnd.apple.mpegurl')
+                    isHls = true;
 
                 var streamParts = streamUrl.split('/');
 
@@ -120,7 +139,7 @@
 
                 // start video
 
-                if (Hls.isSupported()) {
+                if (isHls && Hls.isSupported()) {
                     // use HLS if supported
                     hls.loadSource(streamUrl + '?t=0');
                     hls.attachMedia(video);
@@ -128,10 +147,11 @@
                         video.muted = false;
                         video.play();
                     });
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                } else if (!contentType || video.canPlayType(contentType)) {
                     // fallback to HTML5 video
                     video.src = streamUrl + '?t=0';
                     video.addEventListener('canplay', function() {
+                        video.muted = false;
                         video.play();
                     });
                 }
