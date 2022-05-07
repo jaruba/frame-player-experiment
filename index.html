@@ -22,6 +22,51 @@
 
     <script>
 
+        // send property changes to Stremio
+
+        function setProp(propName, propValue) {
+            window.parent.postMessage({ propName: propName, propValue: propValue }, '*');
+        }
+
+
+        // get property change requests from Stremio
+
+        function getProp(propName, propValue) {
+            switch (propName) {
+                case 'paused': {
+                    propValue ? video.pause() : video.play();
+
+                    break;
+                }
+                case 'time': {
+                    if (propValue !== null && isFinite(propValue)) {
+                        video.currentTime = parseInt(propValue, 10) / 1000;
+                    }
+
+                    break;
+                }
+                case 'volume': {
+                    if (propValue !== null && isFinite(propValue)) {
+                        video.muted = false;
+                        video.volume = Math.max(0, Math.min(100, parseInt(propValue, 10))) / 100;
+                    }
+
+                    break;
+                }
+                case 'muted': {
+                    video.muted = !!propValue;
+                    break;
+                }
+                case 'playbackSpeed': {
+                    if (propValue !== null && isFinite(propValue)) {
+                        video.playbackRate = parseFloat(propValue);
+                    }
+
+                    break;
+                }
+            }
+        }
+
         // get streaming url from querystring
 
         function getParameterByName(name, url = window.location.href) {
@@ -58,31 +103,31 @@
         }
 
 
-        // handle prop change messages for parent
+        // listen for prop change events from video
 
         function sendBuffering() {
-            window.parent.postMessage({ propName: 'buffering', propValue: video.readyState < video.HAVE_FUTURE_DATA }, '*');
+            setProp('buffering', video.readyState < video.HAVE_FUTURE_DATA);
         };
         function sendBuffered() {
             var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
             for (var i = 0; i < video.buffered.length; i++) {
                 if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
-                    window.parent.postMessage({ propName: 'buffered', propValue: Math.floor(video.buffered.end(i) * 1000) }, '*');
+                    setProp('buffered', Math.floor(video.buffered.end(i) * 1000));
                     return;
                 }
             }
-            window.parent.postMessage({ propName: 'buffered', propValue: Math.floor(time * 1000) }, '*');
+            setProp('buffered', Math.floor(time * 1000));
         }
         video.onpause = function() {
-            window.parent.postMessage({ propName: 'paused', propValue: !!video.paused }, '*');
+            setProp('paused', !!video.paused);
         };
         video.onplay = function() {
-            window.parent.postMessage({ propName: 'paused', propValue: !!video.paused }, '*');
+            setProp('paused', !!video.paused);
         };
         video.ontimeupdate = function() {
             var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
             if (time) {
-                window.parent.postMessage({ propName: 'time', propValue: Math.floor(time * 1000) }, '*');
+                setProp('time', Math.floor(time * 1000));
             }
             sendBuffered()
         };
@@ -94,18 +139,18 @@
             };
         })
         video.ondurationchange = function() {
-            window.parent.postMessage({ propName: 'duration', propValue: Math.floor(video.duration * 1000) }, '*');
+            setProp('duration', Math.floor(video.duration * 1000));
         };
         video.onvolumechange = function() {
-            window.parent.postMessage({ propName: 'volume', propValue: Math.floor(video.volume * 100) }, '*');
-            window.parent.postMessage({ propName: 'muted', propValue: !!video.muted }, '*');
+            setProp('volume', Math.floor(video.volume * 100));
+            setProp('muted', !!video.muted);
         };
         video.onratechange = function() {
             if (video.playbackRate === null || !isFinite(video.playbackRate)) {
                 return null;
             }
 
-            window.parent.postMessage({ propName: 'playbackSpeed', propValue: video.playbackRate }, '*');
+            setProp('playbackSpeed', video.playbackRate);
         };
 
 
@@ -119,39 +164,7 @@
             var key = e.message ? "message" : "data";
             var data = e[key];
             if ((data || {}).propName) {
-                switch (data.propName) {
-                    case 'paused': {
-                        data.propValue ? video.pause() : video.play();
-
-                        break;
-                    }
-                    case 'time': {
-                        if (data.propValue !== null && isFinite(data.propValue)) {
-                            video.currentTime = parseInt(data.propValue, 10) / 1000;
-                        }
-
-                        break;
-                    }
-                    case 'volume': {
-                        if (data.propValue !== null && isFinite(data.propValue)) {
-                            video.muted = false;
-                            video.volume = Math.max(0, Math.min(100, parseInt(data.propValue, 10))) / 100;
-                        }
-
-                        break;
-                    }
-                    case 'muted': {
-                        video.muted = !!data.propValue;
-                        break;
-                    }
-                    case 'playbackSpeed': {
-                        if (data.propValue !== null && isFinite(data.propValue)) {
-                            video.playbackRate = parseFloat(data.propValue);
-                        }
-
-                        break;
-                    }
-                }
+                getProp(data.propName, data.propValue);
             }
         }, false);
 
