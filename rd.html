@@ -21,6 +21,13 @@
     </center>
 
     <script>
+
+        var video = document.getElementById('video');
+
+        var hls = new Hls({
+            debug: true,
+        });
+
         var tempTime = 0;
 
         var lastKnownTime = 0;
@@ -102,12 +109,8 @@
 
                 // start video
 
-                var video = document.getElementById('video');
                 if (Hls.isSupported()) {
                     // use HLS if supported
-                    var hls = new Hls({
-                        debug: true,
-                    });
                     hls.loadSource(streamUrl + '?t=0');
                     hls.attachMedia(video);
                     hls.on(Hls.Events.MEDIA_ATTACHED, function() {
