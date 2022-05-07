@@ -53,8 +53,12 @@
                 }
                 case 'time': {
                     if (propValue !== null && isFinite(propValue)) {
+                        console.log('time prop: ', propValue);
                         tempTime = parseInt(propValue, 10);
+                        console.log('temp time: ', tempTime);
                         freezeTime = tempTime
+                        console.log('freeze time: ', freezeTime);
+                        console.log('?t=' + Math.round(tempTime / 1000));
                         hls.loadSource(streamUrl + '?t=' + Math.round(tempTime / 1000));
                         setProp('time', freezeTime);
                     }
@@ -167,6 +171,7 @@
                 video.ontimeupdate = function() {
                     var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
                     if (time) {
+                        console.log('time event: ' + time + ' / ' + freezeTime);
                         if (freezeTime) {
                             if (time < 0.5) {
                                 setProp('time', freezeTime);
