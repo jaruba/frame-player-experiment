@@ -73,8 +73,18 @@
                         } else {
                             if (restartOnSeek) {
                                 if (isHls) {
+                                    hls.detachMedia();
+                                    hls.destroy();
+                                    hls = new Hls({
+                                        debug: true,
+                                        startPosition: Math.round(parseInt(propValue, 10) / 1000),
+                                    });
                                     hls.loadSource(streamUrl);
-                                    hls.startLoad(Math.round(parseInt(propValue, 10) / 1000));
+                                    hls.attachMedia(video);
+                                    hls.on(Hls.Events.MEDIA_ATTACHED, function() {
+                                        video.muted = false;
+                                        video.play();
+                                    });
                                 } else {
                                     video.src = streamUrl;
                                 }
