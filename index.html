@@ -37,7 +37,7 @@
         hls.loadSource(getParameterByName('stream'));
         hls.attachMedia(video);
         hls.on(Hls.Events.MEDIA_ATTACHED, function () {
-          video.muted = true;
+          video.muted = false;
           video.play();
         });
       }
