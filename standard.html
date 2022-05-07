@@ -39,6 +39,8 @@
 
         var fragmented = false;
 
+        var fragmentedVar = false;
+
         var restartOnSeek = false;
 
         // send property changes to Stremio
@@ -64,7 +66,7 @@
                         tempTime = parseInt(propValue, 10);
                         freezeTime = tempTime;
                         if (fragmented) {
-                            var streamAt = streamUrl + '?t=' + Math.round(tempTime / 1000);
+                            var streamAt = streamUrl + '?' + fragmentedVar + '=' + Math.round(tempTime / 1000);
                             if (isHls) {
                                 hls.loadSource(streamAt);
                             } else {
@@ -73,6 +75,7 @@
                         } else {
                             if (restartOnSeek) {
                                 if (isHls) {
+                                    // DL uses this craziness
                                     hls.detachMedia();
                                     hls.destroy();
                                     hls = new Hls({
@@ -87,6 +90,7 @@
                                     });
                                 } else {
                                     video.src = streamUrl;
+                                    video.currentTime = parseInt(propValue, 10) / 1000;
                                 }
                             } else {
                                 video.currentTime = parseInt(propValue, 10) / 1000;
@@ -134,8 +138,11 @@
 
         var fragArg = getParameterByName('fragmented');
 
-        if (fragArg && fragArg === '1') {
+        var fragVarArg = getParameterByName('fragmentedVar');
+
+        if (fragArg && fragVarArg && fragArg === '1') {
             fragmented = true;
+            fragmentedVar = fragVarArg;
         }
 
         var restartOnSeekArg = getParameterByName('restartOnSeek')
