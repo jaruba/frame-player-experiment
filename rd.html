@@ -51,7 +51,7 @@
                 case 'time': {
                     if (propValue !== null && isFinite(propValue)) {
                         tempTime += parseInt(propValue, 10);
-                        hls.loadSource(streamUrl + '?t=' + tempTime);
+                        hls.loadSource(streamUrl + '?t=' + Math.round(tempTime / 1000));
                     }
 
                     break;
@@ -167,7 +167,7 @@
                         startedInterval = true;
                         setInterval(function() {
                             var oReq = new XMLHttpRequest();
-                            oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + lastKnownTime);
+                            oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + (lastKnownTime / 1000));
                             oReq.send();
                         }, (60 * 1000) /5);
                     }
