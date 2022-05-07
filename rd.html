@@ -162,15 +162,16 @@
                 video.onplay = function() {
                     setProp('paused', !!video.paused);
                     updatePausedState();
-                    if (!video.paused && freezeTime)
-                        freezeTime = false;
                 };
                 video.ontimeupdate = function() {
                     var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
                     if (time) {
                         if (freezeTime) {
-                            setProp('time', freezeTime);
-                            return;
+                            if (time < 0.5) {
+                                setProp('time', freezeTime);
+                                return;
+                            } else
+                                freezeTime = false
                         }
                         lastKnownTime = tempTime + Math.floor(time * 1000);
                         setProp('time', lastKnownTime);
