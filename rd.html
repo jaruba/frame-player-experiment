@@ -90,7 +90,7 @@
         }
         var streamUrl = getParameterByName('stream');
 
-        var bearer = steamUrl.split('/')[4];
+        var bearer = streamUrl.split('/')[4];
 
         var http = new XMLHttpRequest();
         http.open('HEAD', streamUrl);
