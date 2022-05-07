@@ -158,6 +158,8 @@
                 // start video
 
                 if (isHls && Hls.isSupported()) {
+                    console.log('found hls')
+                    console.log('starting hls: ' + streamUrl + (fragmented ? '?t=0' : ''))
                     // use HLS if supported
                     hls.loadSource(streamUrl + (fragmented ? '?t=0' : ''));
                     hls.attachMedia(video);
@@ -166,6 +168,7 @@
                         video.play();
                     });
                 } else if (!contentType || video.canPlayType(contentType)) {
+                    console.log('starting mp4: ' + streamUrl + (fragmented ? '?t=0' : ''))
                     // fallback to HTML5 video
                     video.src = streamUrl + (fragmented ? '?t=0' : '');
                     video.addEventListener('canplay', function() {
