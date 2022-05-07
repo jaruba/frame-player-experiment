@@ -1,0 +1,208 @@
+
+<html>
+  <head>
+    <title>Stream</title>
+    <style>
+        html, body, video {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+        }
+    </style>
+  </head>
+
+  <body>
+    <script src="./hls.js"></script>
+
+    <center>
+      <video id="video"></video>
+    </center>
+
+    <script>
+
+        // send property changes to Stremio
+
+        function setProp(propName, propValue) {
+            window.parent.postMessage({ propName: propName, propValue: propValue }, '*');
+        }
+
+
+        // get property change requests from Stremio
+
+        function getProp(propName, propValue) {
+            switch (propName) {
+                case 'paused': {
+                    propValue ? video.pause() : video.play();
+
+                    break;
+                }
+                case 'time': {
+                    if (propValue !== null && isFinite(propValue)) {
+                        var tempTime += parseInt(propValue, 10);
+                        hls.loadSource(streamUrl + '?t=' + tempTime);
+                    }
+
+                    break;
+                }
+                case 'volume': {
+                    if (propValue !== null && isFinite(propValue)) {
+                        video.muted = false;
+                        video.volume = Math.max(0, Math.min(100, parseInt(propValue, 10))) / 100;
+                    }
+
+                    break;
+                }
+                case 'muted': {
+                    video.muted = !!propValue;
+                    break;
+                }
+                case 'playbackSpeed': {
+                    if (propValue !== null && isFinite(propValue)) {
+                        video.playbackRate = parseFloat(propValue);
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        // get streaming url from querystring
+
+        function getParameterByName(name, url = window.location.href) {
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+        var streamUrl = getParameterByName('stream');
+
+        var streamParts = streamUrl.split('/');
+
+        var tempTime = 0;
+
+        var lastKnownTime = 0;
+
+        var settingsIdx = {
+            streamId: 3,
+            lang: 4,
+            sub: 5,
+            audioCodec: 6,
+            videoQuality: 7,
+        }
+
+
+        // start video
+
+        var video = document.getElementById('video');
+        if (Hls.isSupported()) {
+            // use HLS if supported
+            var hls = new Hls({
+                debug: true,
+            });
+            hls.loadSource(streamUrl + '?t=0');
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MEDIA_ATTACHED, function() {
+                video.muted = false;
+                video.play();
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // fallback to HTML5 video
+            video.src = streamUrl + '?t=0';
+            video.addEventListener('canplay', function() {
+                video.play();
+            });
+        }
+
+        var startedInterval = false;
+
+        // listen for prop change events from video
+
+        function sendBuffering() {
+            setProp('buffering', video.readyState < video.HAVE_FUTURE_DATA);
+        };
+        function sendBuffered() {
+            var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
+            for (var i = 0; i < video.buffered.length; i++) {
+                if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
+                    setProp('buffered', Math.floor(video.buffered.end(i) * 1000));
+                    return;
+                }
+            }
+            setProp('buffered', Math.floor(time * 1000));
+        }
+        function updatePausedState() {
+            var pausedState = !!video.paused ? 'pause' : 'play'
+            var oReq = new XMLHttpRequest();
+            oReq.addEventListener('load', reqListener);
+            oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId] + '/' + pausedState);
+            oReq.send();
+        }
+        video.onpause = function() {
+            setProp('paused', !!video.paused);
+            updatePausedState();
+        };
+        video.onplay = function() {
+            setProp('paused', !!video.paused);
+            updatePausedState();
+        };
+        video.ontimeupdate = function() {
+            var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
+            if (time) {
+                lastKnownTime = tempTime + Math.floor(time * 1000);
+                setProp('time', lastKnownTime);
+            }
+            sendBuffered()
+            if (!startedInterval) {
+                startedInterval = true;
+                setInterval(function() {
+                    var oReq = new XMLHttpRequest();
+                    oReq.addEventListener('load', reqListener);
+                    oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId] + '/' + lastKnownTime);
+                    oReq.send();
+                }, (60 * 1000) /5);
+            }
+        };
+        var bufferingEvents = ['onwaiting', 'onseeking', 'onseeked', 'onstalled', 'onplaying', 'oncanplay', 'canplaythrough', 'onloadeddata']
+        bufferingEvents.forEach(function(bufferEvent) {
+            video[bufferEvent] = function() {
+                sendBuffering()
+                sendBuffered()
+            };
+        })
+        video.ondurationchange = function() {
+            setProp('duration', Math.floor(video.duration * 1000));
+        };
+        video.onvolumechange = function() {
+            setProp('volume', Math.floor(video.volume * 100));
+            setProp('muted', !!video.muted);
+        };
+        video.onratechange = function() {
+            if (video.playbackRate === null || !isFinite(video.playbackRate)) {
+                return null;
+            }
+
+            setProp('playbackSpeed', video.playbackRate);
+        };
+
+
+        // listen for set prop events from parent
+
+        var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+        var eventer = window[eventMethod];
+        var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+
+        eventer(messageEvent, function(e) {
+            var key = e.message ? "message" : "data";
+            var data = e[key];
+            if ((data || {}).propName) {
+                getProp(data.propName, data.propValue);
+            }
+        }, false);
+
+    </script>
+</body>
+</html>
