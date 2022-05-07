@@ -124,9 +124,8 @@
         var eventer = window[eventMethod];
         var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
 
-        eventer(messageEvent,function(e) {
+        window.addEventListener("message", (e) => {
             console.log('message event')
-            source = e.source;
             var key = e.message ? "message" : "data";
             var data = e[key];
             if ((data || {}).propName) {
