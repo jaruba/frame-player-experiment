@@ -133,13 +133,15 @@
 
                 console.log('content-type', contentType);
 
-                const adHeaderMap = {
+                // some APIs set strange headers
+                const headerMap = {
                     'text/html; charset=UTF-8': 'application/vnd.apple.mpegurl',
+                    'application/x-mpegurl; charset=utf-8': 'application/vnd.apple.mpegurl',
                     'application/octet-stream': 'video/mp4',
                 }
 
-                if (adHeaderMap[contentType])
-                    contentType = adHeaderMap[contentType];
+                if (headerMap[contentType])
+                    contentType = headerMap[contentType];
 
                 if (contentType.indexOf('application/vnd.apple.mpegurl') > -1) {
                     isHls = true;
