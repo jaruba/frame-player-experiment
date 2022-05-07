@@ -74,12 +74,13 @@
                             if (restartOnSeek) {
                                 if (isHls) {
                                     hls.loadSource(streamUrl);
+                                    hls.startLoad(Math.round(parseInt(propValue, 10) / 1000 / 1000))
                                 } else {
                                     video.src = streamUrl;
                                 }
+                            } else {
+                                video.currentTime = parseInt(propValue, 10) / 1000;
                             }
-
-                            video.currentTime = parseInt(propValue, 10) / 1000;
                             tempTime = 0;
                         }
                         setProp('time', freezeTime);
