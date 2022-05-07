@@ -166,7 +166,6 @@
                     });
                 }
 
-                var startedInterval = false;
 
                 // listen for prop change events from video
 
@@ -183,20 +182,11 @@
                     }
                     setProp('buffered', Math.floor(time * 1000));
                 }
-                function updatePausedState() {
-                    var pausedState = !!video.paused ? 'pause' : 'play'
-                    var oReq = new XMLHttpRequest();
-                    oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + pausedState, true);
-                    oReq.setRequestHeader('Authorization','Bearer ' + bearer);
-                    oReq.send();
-                }
                 video.onpause = function() {
                     setProp('paused', !!video.paused);
-                    updatePausedState();
                 };
                 video.onplay = function() {
                     setProp('paused', !!video.paused);
-                    updatePausedState();
                 };
                 video.ontimeupdate = function() {
                     var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
@@ -213,15 +203,6 @@
                         setProp('time', lastKnownTime);
                     }
                     sendBuffered()
-                    if (!startedInterval) {
-                        startedInterval = true;
-                        setInterval(function() {
-                            var oReq = new XMLHttpRequest();
-                            oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + (lastKnownTime / 1000), true);
-                            oReq.setRequestHeader('Authorization','Bearer ' + bearer);
-                            oReq.send();
-                        }, (60 * 1000) /5);
-                    }
                 };
                 var bufferingEvents = ['onwaiting', 'onseeking', 'onseeked', 'onstalled', 'onplaying', 'oncanplay', 'canplaythrough', 'onloadeddata']
                 bufferingEvents.forEach(function(bufferEvent) {
