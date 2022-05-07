@@ -124,18 +124,20 @@
         var eventer = window[eventMethod];
         var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
 
-        window.addEventListener("message", (e) => {
+        eventer(messageEvent, function(e) {
             console.log('message event')
             var key = e.message ? "message" : "data";
             var data = e[key];
             if ((data || {}).propName) {
                 switch (data.propName) {
                     case 'paused': {
+                        console.log('prop1');
                         data.propValue ? video.pause() : video.play();
 
                         break;
                     }
                     case 'time': {
+                        console.log('prop2');
                         if (data.propValue !== null && isFinite(data.propValue)) {
                             video.currentTime = parseInt(data.propValue, 10) / 1000;
                         }
@@ -143,6 +145,7 @@
                         break;
                     }
                     case 'volume': {
+                        console.log('prop3');
                         if (data.propValue !== null && isFinite(data.propValue)) {
                             video.muted = false;
                             video.volume = Math.max(0, Math.min(100, parseInt(data.propValue, 10))) / 100;
@@ -151,10 +154,12 @@
                         break;
                     }
                     case 'muted': {
+                        console.log('prop4');
                         video.muted = !!data.propValue;
                         break;
                     }
                     case 'playbackSpeed': {
+                        console.log('prop5');
                         if (data.propValue !== null && isFinite(data.propValue)) {
                             video.playbackRate = parseFloat(data.propValue);
                         }
