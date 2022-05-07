@@ -21,6 +21,9 @@
     </center>
 
     <script>
+        var tempTime = 0;
+
+        var lastKnownTime = 0;
 
         // send property changes to Stremio
 
@@ -87,10 +90,6 @@
                 streamUrl = this.responseURL;
 
                 var streamParts = streamUrl.split('/');
-
-                var tempTime = 0;
-
-                var lastKnownTime = 0;
 
                 var settingsIdx = {
                     streamId: 4,
