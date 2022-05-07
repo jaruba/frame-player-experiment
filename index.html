@@ -69,7 +69,7 @@
         video.ontimeupdate = function() {
             var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
             if (time) {
-                window.parent.postMessage({ propName: 'time', propValue: time }, '*');
+                window.parent.postMessage({ propName: 'time', propValue: Math.floor(time * 1000) }, '*');
             }
             sendBuffered()
         };
