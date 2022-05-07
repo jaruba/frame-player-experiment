@@ -141,7 +141,7 @@
                 if (adHeaderMap[contentType])
                     contentType = adHeaderMap[contentType];
 
-                if (contentType === 'application/vnd.apple.mpegurl')
+                if (contentType.indexOf('application/vnd.apple.mpegurl') > -1)
                     isHls = true;
 
                 var streamParts = streamUrl.split('/');
