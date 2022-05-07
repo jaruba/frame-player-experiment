@@ -148,6 +148,7 @@
                     var pausedState = !!video.paused ? 'pause' : 'play'
                     var oReq = new XMLHttpRequest();
                     oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + pausedState);
+                    oReq.setRequestHeader('Origin','https://jaruba.github.io');
                     oReq.setRequestHeader('Authorization','Bearer ' + bearer);
                     oReq.send();
                 }
@@ -171,6 +172,7 @@
                         setInterval(function() {
                             var oReq = new XMLHttpRequest();
                             oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + (lastKnownTime / 1000));
+                            oReq.setRequestHeader('Origin','https://jaruba.github.io');
                             oReq.setRequestHeader('Authorization','Bearer ' + bearer);
                             oReq.send();
                         }, (60 * 1000) /5);
