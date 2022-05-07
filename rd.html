@@ -118,7 +118,7 @@
                 if (this.responseURL)
                     streamUrl = this.responseURL;
 
-                if (this.getResponseHeader('content-type'))
+                if (this.getResponseHeader && this.getResponseHeader('content-type'))
                     contentType = this.getResponseHeader('content-type')
 
                 console.log('content-type', contentType)
