@@ -37,6 +37,8 @@
 
         var isHls = false;
 
+        var fragmented = false;
+
         // send property changes to Stremio
 
         function setProp(propName, propValue) {
@@ -57,17 +59,18 @@
                 }
                 case 'time': {
                     if (propValue !== null && isFinite(propValue)) {
-                        console.log('time prop: ', propValue);
                         tempTime = parseInt(propValue, 10);
-                        console.log('temp time: ', tempTime);
-                        freezeTime = tempTime
-                        console.log('freeze time: ', freezeTime);
-                        console.log('?t=' + Math.round(tempTime / 1000));
-                        var streamAt = streamUrl + '?t=' + Math.round(tempTime / 1000);
-                        if (isHls) {
-                            hls.loadSource(streamAt);
+                        freezeTime = tempTime;
+                        if (fragmented) {
+                            var streamAt = streamUrl + '?t=' + Math.round(tempTime / 1000);
+                            if (isHls) {
+                                hls.loadSource(streamAt);
+                            } else {
+                                video.src = streamAt;
+                            }
                         } else {
-                            video.src = streamAt;
+                            video.currentTime = parseInt(propValue, 10) / 1000;
+                            tempTime = 0;
                         }
                         setProp('time', freezeTime);
                     }
@@ -107,6 +110,13 @@
             return decodeURIComponent(results[2].replace(/\+/g, ' '));
         }
         var streamUrl = getParameterByName('stream');
+
+        var fragArg = getParameterByName('fragmented');
+
+        if (fragArg && fragArg === '1') {
+            fragmented = true;
+        }
+
 
         var bearer = streamUrl.split('/')[4];
 
