@@ -1,6 +1,7 @@
 
 <html>
   <head>
+    <meta name="referrer" content="origin" />
     <title>Stream</title>
     <style>
         html, body, video {
@@ -173,7 +174,7 @@
                             var oReq = new XMLHttpRequest();
                             oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + (lastKnownTime / 1000));
                             oReq.setRequestHeader('Origin','https://jaruba.github.io');
-                            oReq.setRequestHeader('Authorization','Bearer ' + bearer);
+                            oReq.setRequestHeader('authorization','Bearer ' + bearer);
                             oReq.send();
                         }, (60 * 1000) /5);
                     }
