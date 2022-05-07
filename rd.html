@@ -90,6 +90,8 @@
         }
         var streamUrl = getParameterByName('stream');
 
+        var bearer = steamUrl.split('/')[4];
+
         var http = new XMLHttpRequest();
         http.open('HEAD', streamUrl);
         http.onreadystatechange = function() {
@@ -145,6 +147,7 @@
                 function updatePausedState() {
                     var pausedState = !!video.paused ? 'pause' : 'play'
                     var oReq = new XMLHttpRequest();
+                    oReq.setRequestHeader('Authorization','Bearer ' + bearer);
                     oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + pausedState);
                     oReq.send();
                 }
@@ -167,6 +170,7 @@
                         startedInterval = true;
                         setInterval(function() {
                             var oReq = new XMLHttpRequest();
+                            oReq.setRequestHeader('Authorization','Bearer ' + bearer);
                             oReq.open('GET', 'https://app.real-debrid.com/rest/1.0/streaming/ping/' + streamParts[settingsIdx.streamId].substr(0,13) + '/' + (lastKnownTime / 1000));
                             oReq.send();
                         }, (60 * 1000) /5);
