@@ -151,7 +151,7 @@
 
                 if (isHls && Hls.isSupported()) {
                     // use HLS if supported
-                    hls.loadSource(streamUrl + '?t=0');
+                    hls.loadSource(streamUrl + (fragmented ? '?t=0' : ''));
                     hls.attachMedia(video);
                     hls.on(Hls.Events.MEDIA_ATTACHED, function() {
                         video.muted = false;
@@ -159,7 +159,7 @@
                     });
                 } else if (!contentType || video.canPlayType(contentType)) {
                     // fallback to HTML5 video
-                    video.src = streamUrl + '?t=0';
+                    video.src = streamUrl + (fragmented ? '?t=0' : '');
                     video.addEventListener('canplay', function() {
                         video.muted = false;
                         video.play();
