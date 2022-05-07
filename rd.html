@@ -51,7 +51,7 @@
                 }
                 case 'time': {
                     if (propValue !== null && isFinite(propValue)) {
-                        tempTime += parseInt(propValue, 10);
+                        tempTime = parseInt(propValue, 10);
                         hls.loadSource(streamUrl + '?t=' + Math.round(tempTime / 1000));
                     }
 
