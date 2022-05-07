@@ -40,7 +40,7 @@
                 }
                 case 'time': {
                     if (propValue !== null && isFinite(propValue)) {
-                        var tempTime += parseInt(propValue, 10);
+                        tempTime += parseInt(propValue, 10);
                         hls.loadSource(streamUrl + '?t=' + tempTime);
                     }
 
