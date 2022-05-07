@@ -141,8 +141,10 @@
                 if (adHeaderMap[contentType])
                     contentType = adHeaderMap[contentType];
 
-                if (contentType.indexOf('application/vnd.apple.mpegurl') > -1)
+                if (contentType.indexOf('application/vnd.apple.mpegurl') > -1) {
                     isHls = true;
+                    console.log('passed hls header check');
+                }
 
                 var streamParts = streamUrl.split('/');
 
@@ -175,6 +177,8 @@
                         video.muted = false;
                         video.play();
                     });
+                } else {
+                    console.log('damn')
                 }
 
 
