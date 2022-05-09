@@ -25,7 +25,7 @@
         // send property changes to Stremio
 
         function setProp(propName, propValue) {
-            window.parent.postMessage({ propName: propName, propValue: propValue }, '*');
+            window.parent.postMessage({ event: 'propChanged', args: [propName, propValue] }, '*');
         }
 
 
