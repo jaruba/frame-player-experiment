@@ -243,7 +243,7 @@ function getPropValue(propName) {
             var key = e.message ? "message" : "data";
             var data = e[key];
             console.log(data);
-            if ((data || {}).propName) {
+            if (data.type === 'setProp') {
                 getProp(data.propName, data.propValue);
             }
         }, false);
