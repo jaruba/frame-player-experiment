@@ -242,6 +242,7 @@ function getPropValue(propName) {
         eventer(messageEvent, function(e) {
             var key = e.message ? "message" : "data";
             var data = e[key];
+            console.log(data);
             if ((data || {}).propName) {
                 getProp(data.propName, data.propValue);
             }
