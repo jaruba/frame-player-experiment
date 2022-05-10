@@ -85,79 +85,79 @@
         var video = document.getElementById('video');
         var stream = {url: streamUrl};
         var destroyed = false;
-function getPropValue(propName) {
-    switch (propName) {
-        case 'stream': {
-            return stream;
-        }
-        case 'paused': {
-            if (stream === null) {
-                return null;
-            }
+        function getPropValue(propName) {
+            switch (propName) {
+                case 'stream': {
+                    return stream;
+                }
+                case 'paused': {
+                    if (stream === null) {
+                        return null;
+                    }
 
-            return !!video.paused;
-        }
-        case 'time': {
-            if (stream === null || video.currentTime === null || !isFinite(video.currentTime)) {
-                return null;
-            }
+                    return !!video.paused;
+                }
+                case 'time': {
+                    if (stream === null || video.currentTime === null || !isFinite(video.currentTime)) {
+                        return null;
+                    }
 
-            return Math.floor(video.currentTime * 1000);
-        }
-        case 'duration': {
-            if (stream === null || video.duration === null || !isFinite(video.duration)) {
-                return null;
-            }
+                    return Math.floor(video.currentTime * 1000);
+                }
+                case 'duration': {
+                    if (stream === null || video.duration === null || !isFinite(video.duration)) {
+                        return null;
+                    }
 
-            return Math.floor(video.duration * 1000);
-        }
-        case 'buffering': {
-            if (stream === null) {
-                return null;
-            }
+                    return Math.floor(video.duration * 1000);
+                }
+                case 'buffering': {
+                    if (stream === null) {
+                        return null;
+                    }
 
-            return video.readyState < video.HAVE_FUTURE_DATA;
-        }
-        case 'buffered': {
-            if (stream === null) {
-                return null;
-            }
+                    return video.readyState < video.HAVE_FUTURE_DATA;
+                }
+                case 'buffered': {
+                    if (stream === null) {
+                        return null;
+                    }
 
-            var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
-            for (var i = 0; i < video.buffered.length; i++) {
-                if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
-                    return Math.floor(video.buffered.end(i) * 1000);
+                    var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
+                    for (var i = 0; i < video.buffered.length; i++) {
+                        if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
+                            return Math.floor(video.buffered.end(i) * 1000);
+                        }
+                    }
+
+                    return Math.floor(time * 1000);
+                }
+                case 'volume': {
+                    if (destroyed || video.volume === null || !isFinite(video.volume)) {
+                        return null;
+                    }
+
+                    return Math.floor(video.volume * 100);
+                }
+                case 'muted': {
+                    if (destroyed) {
+                        return null;
+                    }
+
+                    return !!video.muted;
+                }
+                case 'playbackSpeed': {
+                    if (destroyed || video.playbackRate === null || !isFinite(video.playbackRate)) {
+                        return null;
+                    }
+
+                    return video.playbackRate;
+                }
+                default: {
+                    return null;
                 }
             }
-
-            return Math.floor(time * 1000);
         }
-        case 'volume': {
-            if (destroyed || video.volume === null || !isFinite(video.volume)) {
-                return null;
-            }
-
-            return Math.floor(video.volume * 100);
-        }
-        case 'muted': {
-            if (destroyed) {
-                return null;
-            }
-
-            return !!video.muted;
-        }
-        case 'playbackSpeed': {
-            if (destroyed || video.playbackRate === null || !isFinite(video.playbackRate)) {
-                return null;
-            }
-
-            return video.playbackRate;
-        }
-        default: {
-            return null;
-        }
-    }
-}
         if (Hls.isSupported()) {
             // use HLS if supported
             var hls = new Hls({
@@ -242,7 +242,6 @@ function getPropValue(propName) {
         eventer(messageEvent, function(e) {
             var key = e.message ? "message" : "data";
             var data = e[key];
-            console.log(data);
             if (data.type === 'setProp') {
                 getProp(data.propName, data.propValue);
             }
