@@ -24,14 +24,16 @@
 
         // send property changes to Stremio
 
-        function setProp(propName, propValue) {
-            window.parent.postMessage({ event: 'propChanged', args: [propName, propValue] }, '*');
+        function emit(event, args) {
+            window.parent.postMessage({ event, args }, '*');
+        }
+
+        function emitPropChanged(propName, propValue) {
+            emit({ event: 'propChanged', args: [propName, propValue] });
         }
 
 
-        // get property change requests from Stremio
-
-        function getProp(propName, propValue) {
+        function setProp(propName, propValue) {
             switch (propName) {
                 case 'paused': {
                     propValue ? video.pause() : video.play();
@@ -67,25 +69,10 @@
             }
         }
 
-        // get streaming url from querystring
 
-        function getParameterByName(name, url = window.location.href) {
-            name = name.replace(/[\[\]]/g, '\\$&');
-            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
-                results = regex.exec(url);
-            if (!results) return null;
-            if (!results[2]) return '';
-            return decodeURIComponent(results[2].replace(/\+/g, ' '));
-        }
-        var streamUrl = getParameterByName('stream');
+        // get property values from video
 
-
-        // start video
-
-        var video = document.getElementById('video');
-        var stream = {url: streamUrl};
-        var destroyed = false;
-        function getPropValue(propName) {
+        function getProp(propName) {
             switch (propName) {
                 case 'stream': {
                     return stream;
@@ -158,6 +145,26 @@
                 }
             }
         }
+
+        // get streaming url from querystring
+
+        function getParameterByName(name, url = window.location.href) {
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+        var streamUrl = getParameterByName('stream');
+
+
+        // start video
+
+        var video = document.getElementById('video');
+        var stream = { url: streamUrl };
+        var destroyed = false;
+
         if (Hls.isSupported()) {
             // use HLS if supported
             var hls = new Hls({
@@ -177,36 +184,36 @@
             });
         }
 
-      ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'volume', 'muted', 'playbackSpeed'].forEach((p) => {
-        setProp(p, getPropValue(p));
-      }) 
+        ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'volume', 'muted', 'playbackSpeed'].forEach((p) => {
+            emitPropChanged(p, getProp(p));
+        }) 
 
 
         // listen for prop change events from video
 
         function sendBuffering() {
-            setProp('buffering', video.readyState < video.HAVE_FUTURE_DATA);
+            emitPropChanged('buffering', video.readyState < video.HAVE_FUTURE_DATA);
         };
         function sendBuffered() {
             var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
             for (var i = 0; i < video.buffered.length; i++) {
                 if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
-                    setProp('buffered', Math.floor(video.buffered.end(i) * 1000));
+                    emitPropChanged('buffered', Math.floor(video.buffered.end(i) * 1000));
                     return;
                 }
             }
-            setProp('buffered', Math.floor(time * 1000));
+            emitPropChanged('buffered', Math.floor(time * 1000));
         }
         video.onpause = function() {
-            setProp('paused', !!video.paused);
+            emitPropChanged('paused', !!video.paused);
         };
         video.onplay = function() {
-            setProp('paused', !!video.paused);
+            emitPropChanged('paused', !!video.paused);
         };
         video.ontimeupdate = function() {
             var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
             if (time) {
-                setProp('time', Math.floor(time * 1000));
+                emitPropChanged('time', Math.floor(time * 1000));
             }
             sendBuffered()
         };
@@ -218,32 +225,28 @@
             };
         })
         video.ondurationchange = function() {
-            setProp('duration', Math.floor(video.duration * 1000));
+            emitPropChanged('duration', Math.floor(video.duration * 1000));
         };
         video.onvolumechange = function() {
-            setProp('volume', Math.floor(video.volume * 100));
-            setProp('muted', !!video.muted);
+            emitPropChanged('volume', Math.floor(video.volume * 100));
+            emitPropChanged('muted', !!video.muted);
         };
         video.onratechange = function() {
             if (video.playbackRate === null || !isFinite(video.playbackRate)) {
                 return null;
             }
 
-            setProp('playbackSpeed', video.playbackRate);
+            emitPropChanged('playbackSpeed', video.playbackRate);
         };
 
 
         // listen for set prop events from parent
 
-        var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
-        var eventer = window[eventMethod];
-        var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
-
-        eventer(messageEvent, function(e) {
-            var key = e.message ? "message" : "data";
+        window.addEventListener('message', function(e) {
+            var key = e.message ? 'message' : 'data';
             var data = e[key];
             if (data.type === 'setProp') {
-                getProp(data.propName, data.propValue);
+                setProp(data.propName, data.propValue);
             }
         }, false);
 
