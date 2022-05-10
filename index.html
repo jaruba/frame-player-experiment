@@ -22,8 +22,6 @@
 
     <script>
 
-        // send property changes to Stremio
-
         function emit(event, args) {
             window.parent.postMessage({ event, args }, '*');
         }
@@ -69,8 +67,6 @@
             }
         }
 
-
-        // get property values from video
 
         function getProp(propName) {
             switch (propName) {
@@ -145,6 +141,7 @@
                 }
             }
         }
+
 
         // get streaming url from querystring
 
@@ -242,7 +239,11 @@
 
         // listen for set prop events from parent
 
-        window.addEventListener('message', function(e) {
+        var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+        var eventer = window[eventMethod];
+        var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+
+        eventer(messageEvent, function(e) {
             var key = e.message ? 'message' : 'data';
             var data = e[key];
             if (data.type === 'setProp') {
