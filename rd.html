@@ -39,8 +39,12 @@
 
         // send property changes to Stremio
 
-        function setProp(propName, propValue) {
-            window.parent.postMessage({ propName: propName, propValue: propValue }, '*');
+        function emit(event, args) {
+            window.parent.postMessage({ event, args }, '*');
+        }
+
+        function emitPropChanged(propName, propValue) {
+            emit('propChanged', [propName, propValue]);
         }
 
 
@@ -48,7 +52,7 @@
 
         var freezeTime = false;
 
-        function getProp(propName, propValue) {
+        function setProp(propName, propValue) {
             switch (propName) {
                 case 'paused': {
                     propValue ? video.pause() : video.play();
@@ -69,7 +73,7 @@
                         } else {
                             video.src = streamAt;
                         }
-                        setProp('time', freezeTime);
+                        emitPropChanged('time', freezeTime);
                     }
 
                     break;
@@ -92,6 +96,83 @@
                     }
 
                     break;
+                }
+            }
+        }
+
+        var stream = {url: streamUrl};
+        var destroyed = false;
+
+        function getProp(propName) {
+            switch (propName) {
+                case 'stream': {
+                    return stream;
+                }
+                case 'paused': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    return !!video.paused;
+                }
+                case 'time': {
+                    if (stream === null || video.currentTime === null || !isFinite(video.currentTime)) {
+                        return null;
+                    }
+
+                    return Math.floor(video.currentTime * 1000);
+                }
+                case 'duration': {
+                    if (stream === null || video.duration === null || !isFinite(video.duration)) {
+                        return null;
+                    }
+
+                    return Math.floor(video.duration * 1000);
+                }
+                case 'buffering': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    return video.readyState < video.HAVE_FUTURE_DATA;
+                }
+                case 'buffered': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
+                    for (var i = 0; i < video.buffered.length; i++) {
+                        if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
+                            return Math.floor(video.buffered.end(i) * 1000);
+                        }
+                    }
+
+                    return Math.floor(time * 1000);
+                }
+                case 'volume': {
+                    if (destroyed || video.volume === null || !isFinite(video.volume)) {
+                        return null;
+                    }
+
+                    return Math.floor(video.volume * 100);
+                }
+                case 'muted': {
+                    if (destroyed) {
+                        return null;
+                    }
+
+                    return !!video.muted;
+                }
+                case 'playbackSpeed': {
+                    if (destroyed || video.playbackRate === null || !isFinite(video.playbackRate)) {
+                        return null;
+                    }
+
+                    return video.playbackRate;
+                }
+                default: {
+                    return null;
                 }
             }
         }
@@ -156,22 +237,26 @@
                     });
                 }
 
+                ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'volume', 'muted', 'playbackSpeed'].forEach((p) => {
+                    emitPropChanged(p, getProp(p));
+                });
+
                 var startedInterval = false;
 
                 // listen for prop change events from video
 
                 function sendBuffering() {
-                    setProp('buffering', video.readyState < video.HAVE_FUTURE_DATA);
+                    emitPropChanged('buffering', video.readyState < video.HAVE_FUTURE_DATA);
                 };
                 function sendBuffered() {
                     var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
                     for (var i = 0; i < video.buffered.length; i++) {
                         if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
-                            setProp('buffered', Math.floor(video.buffered.end(i) * 1000));
+                            emitPropChanged('buffered', Math.floor(video.buffered.end(i) * 1000));
                             return;
                         }
                     }
-                    setProp('buffered', Math.floor(time * 1000));
+                    emitPropChanged('buffered', Math.floor(time * 1000));
                 }
                 function updatePausedState() {
                     var pausedState = !!video.paused ? 'pause' : 'play'
@@ -181,11 +266,11 @@
                     oReq.send();
                 }
                 video.onpause = function() {
-                    setProp('paused', !!video.paused);
+                    emitPropChanged('paused', !!video.paused);
                     updatePausedState();
                 };
                 video.onplay = function() {
-                    setProp('paused', !!video.paused);
+                    emitPropChanged('paused', !!video.paused);
                     updatePausedState();
                 };
                 video.ontimeupdate = function() {
@@ -194,13 +279,13 @@
                         console.log('time event: ' + time + ' / ' + freezeTime);
                         if (freezeTime) {
                             if (time < 0.5) {
-                                setProp('time', freezeTime);
+                                emitPropChanged('time', freezeTime);
                                 return;
                             } else
                                 freezeTime = false
                         }
                         lastKnownTime = tempTime + Math.floor(time * 1000);
-                        setProp('time', lastKnownTime);
+                        emitPropChanged('time', lastKnownTime);
                     }
                     sendBuffered()
                     if (!startedInterval) {
@@ -221,32 +306,28 @@
                     };
                 })
                 video.ondurationchange = function() {
-                    setProp('duration', Math.floor(video.duration * 1000));
+                    emitPropChanged('duration', Math.floor(video.duration * 1000));
                 };
                 video.onvolumechange = function() {
-                    setProp('volume', Math.floor(video.volume * 100));
-                    setProp('muted', !!video.muted);
+                    emitPropChanged('volume', Math.floor(video.volume * 100));
+                    emitPropChanged('muted', !!video.muted);
                 };
                 video.onratechange = function() {
                     if (video.playbackRate === null || !isFinite(video.playbackRate)) {
                         return null;
                     }
 
-                    setProp('playbackSpeed', video.playbackRate);
+                    emitPropChanged('playbackSpeed', video.playbackRate);
                 };
 
 
                 // listen for set prop events from parent
 
-                var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
-                var eventer = window[eventMethod];
-                var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
-
-                eventer(messageEvent, function(e) {
-                    var key = e.message ? "message" : "data";
+                window.addEventListener('message', function(e) {
+                    var key = e.message ? 'message' : 'data';
                     var data = e[key];
-                    if ((data || {}).propName) {
-                        getProp(data.propName, data.propValue);
+                    if (data.type === 'setProp') {
+                        setProp(data.propName, data.propValue);
                     }
                 }, false);
             }
