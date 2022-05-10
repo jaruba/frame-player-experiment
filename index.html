@@ -27,7 +27,7 @@
         }
 
         function emitPropChanged(propName, propValue) {
-            emit({ event: 'propChanged', args: [propName, propValue] });
+            emit('propChanged', [propName, propValue]);
         }
 
 
@@ -239,11 +239,7 @@
 
         // listen for set prop events from parent
 
-        var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
-        var eventer = window[eventMethod];
-        var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
-
-        eventer(messageEvent, function(e) {
+        window.addEventListener('message', function(e) {
             var key = e.message ? 'message' : 'data';
             var data = e[key];
             if (data.type === 'setProp') {
