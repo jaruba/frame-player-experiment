@@ -27,14 +27,13 @@
         function setProp(propName, propValue) {
             window.parent.postMessage({ event: 'propChanged', args: [propName, propValue] }, '*');
         }
-      
         window.parent.postMessage({ event: 'implementationChanged', args: [{
             name: 'HTMLVideo',
             external: false,
             props: ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'audioTracks', 'selectedAudioTrackId', 'subtitlesTracks', 'selectedSubtitlesTrackId', 'subtitlesOffset', 'subtitlesSize', 'subtitlesTextColor', 'subtitlesBackgroundColor', 'subtitlesOutlineColor', 'volume', 'muted', 'playbackSpeed'],
             commands: ['load', 'unload', 'destroy'],
             events: ['propValue', 'propChanged', 'ended', 'error', 'subtitlesTrackLoaded', 'audioTrackLoaded']
-        }] })
+        }] }, '*')
 
 
         // get property change requests from Stremio
