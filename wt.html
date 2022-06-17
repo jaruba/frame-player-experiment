@@ -91,7 +91,7 @@
                         return null;
                     }
 
-                    return !!video.paused;
+                    return !video ? false : !!video.paused;
                 }
                 case 'time': {
                     if (stream === null || video.currentTime === null || !isFinite(video.currentTime)) {
@@ -187,7 +187,7 @@
 
             window.webtor = window.webtor || [];
             window.webtor.push({
-                id: 'player',
+                id: 'video',
                 width: '100%',
                 magnet: ih,
                 on: function (e) {
