@@ -1,0 +1,246 @@
+
+<html>
+  <head>
+    <title>Stream</title>
+    <style>
+        html, body, video {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+        }
+    </style>
+  </head>
+
+  <body>
+    <script src="./hls.js"></script>
+
+    <center>
+      <video id="video"></video>
+    </center>
+
+    <script src="https://cdn.jsdelivr.net/npm/@webtor/player-sdk-js/dist/index.min.js" charset="utf-8" async></script>
+
+    <script>
+
+        var video
+
+        function emit(event, args) {
+            window.parent.postMessage({ event, args }, '*');
+        }
+        window.parent.postMessage({ event: 'implementationChanged', args: [{
+            name: 'HTMLVideo',
+            external: false,
+            props: ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'audioTracks', 'selectedAudioTrackId', 'subtitlesTracks', 'selectedSubtitlesTrackId', 'subtitlesOffset', 'subtitlesSize', 'subtitlesTextColor', 'subtitlesBackgroundColor', 'subtitlesOutlineColor', 'volume', 'muted', 'playbackSpeed'],
+            commands: ['load', 'unload', 'destroy'],
+            events: ['propValue', 'propChanged', 'ended', 'error', 'subtitlesTrackLoaded', 'audioTrackLoaded']
+        }] }, '*')
+
+        function emitPropChanged(propName, propValue) {
+            emit('propChanged', [propName, propValue]);
+        }
+
+
+        function setProp(propName, propValue) {
+            switch (propName) {
+                case 'paused': {
+                    if (video) {
+                        propValue ? video.pause() : video.play();
+                    }
+
+                    break;
+                }
+                case 'time': {
+                    if (video && propValue !== null && isFinite(propValue)) {
+                        video.setPosition(parseInt(propValue, 10) / 1000);
+                    }
+
+                    break;
+                }
+                case 'volume': {
+                //     if (propValue !== null && isFinite(propValue)) {
+                //         video.muted = false;
+                //         video.volume = Math.max(0, Math.min(100, parseInt(propValue, 10))) / 100;
+                //     }
+
+                    break;
+                }
+                case 'muted': {
+                    //video.muted = !!propValue;
+                    break;
+                }
+                case 'playbackSpeed': {
+                    //if (propValue !== null && isFinite(propValue)) {
+                    //    video.playbackRate = parseFloat(propValue);
+                    //}
+
+                    break;
+                }
+            }
+        }
+
+
+        function getProp(propName) {
+            switch (propName) {
+                case 'stream': {
+                    return stream;
+                }
+                case 'paused': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    return !!video.paused;
+                }
+                case 'time': {
+                    if (stream === null || video.currentTime === null || !isFinite(video.currentTime)) {
+                        return null;
+                    }
+
+                    return Math.floor(video.currentTime * 1000);
+                }
+                case 'duration': {
+                    if (stream === null || video.duration === null || !isFinite(video.duration)) {
+                        return null;
+                    }
+
+                    return Math.floor(video.duration * 1000);
+                }
+                case 'buffering': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    return !video ? true : false;
+
+//                    return video.readyState < video.HAVE_FUTURE_DATA;
+                }
+                case 'buffered': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    return 1;
+
+                    // var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
+                    // for (var i = 0; i < video.buffered.length; i++) {
+                    //     if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
+                    //         return Math.floor(video.buffered.end(i) * 1000);
+                    //     }
+                    // }
+
+                    // return Math.floor(time * 1000);
+                }
+                case 'volume': {
+//                    if (destroyed || video.volume === null || !isFinite(video.volume)) {
+//                        return null;
+//                    }
+
+//                    return Math.floor(video.volume * 100);
+                    return 100;
+                }
+                case 'muted': {
+                    if (destroyed) {
+                        return null;
+                    }
+
+//                    return !!video.muted;
+                    return false;
+                }
+                case 'playbackSpeed': {
+                    if (destroyed || video.playbackRate === null || !isFinite(video.playbackRate)) {
+                        return null;
+                    }
+
+//                    return video.playbackRate;
+
+                    return 1;
+                }
+                default: {
+                    return null;
+                }
+            }
+        }
+
+
+        // get streaming url from querystring
+
+        function getParameterByName(name, url = window.location.href) {
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+
+        // start video
+
+//        var video = document.getElementById('video');
+        var destroyed = false;
+
+        var ih = getParameterByName('ih');
+
+        var stream = { infohash: ih };
+
+            window.webtor = window.webtor || [];
+            window.webtor.push({
+                id: 'player',
+                width: '100%',
+                magnet: ih,
+                on: function (e) {
+                    if (e.name == window.webtor.INITED) {
+                        video = e.player;
+                        video.paused = false;
+                        emitPropChanged('paused', !!video.paused);
+                        e.player.play();
+                        player.style.display = 'block';
+                    }
+                    if (e.name == window.webtor.PLAYER_STATUS) {
+                        if (e.data == 'PLAY') {
+                            video.paused = false;
+                            emitPropChanged('paused', !!video.paused);
+                        } else if (e.data == 'PAUSED') {
+                            video.paused = true;
+                            emitPropChanged('paused', !!video.paused);
+                        }
+                        console.log('player status', e.data);
+                    }
+                    if (e.name == window.webtor.OPEN) {
+                        console.log('player open', e.data);
+                    }
+                    if (e.name == window.webtor.CURRENT_TIME) {
+                        console.log('player time', parseInt(e.data));
+                        video.currentTime = parseInt(e.data);
+                        var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
+                        if (time) {
+                            emitPropChanged('time', Math.floor(time * 1000));
+                        }
+                    }
+                    if (e.name == window.webtor.DURATION) {
+                        console.log('player duration', parseInt(e.data));
+                        video.duration = parseInt(e.data);
+                        emitPropChanged('duration', Math.floor(video.duration * 1000));
+                    }
+                },
+            });
+
+        ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'volume', 'muted', 'playbackSpeed'].forEach((p) => {
+            emitPropChanged(p, getProp(p));
+        }) 
+
+        // listen for set prop events from parent
+
+        window.addEventListener('message', function(e) {
+            var key = e.message ? 'message' : 'data';
+            var data = e[key];
+            if (data.type === 'setProp') {
+                setProp(data.propName, data.propValue);
+            }
+        }, false);
+
+    </script>
+</body>
+</html>
