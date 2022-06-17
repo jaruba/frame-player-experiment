@@ -1,0 +1,398 @@
+<html>
+
+<head>
+    <title>Stream</title>
+    <style>
+        html,
+        body,
+        video {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="./hls.js"></script>
+
+    <center>
+        <video id="video" crossorigin="anonymous"></video>
+    </center>
+
+    <script>
+        const MANIFEST = {
+            name: 'MyCustomVideo',
+            external: false,
+            props: ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'volume', 'muted', 'playbackSpeed'],
+            commands: ['load', 'unload', 'destroy'],
+            events: ['propValue', 'propChanged', 'ended', 'error']
+        };
+        const HLS_CONFIG = {
+            debug: false,
+            enableWorker: true,
+            lowLatencyMode: false,
+            backBufferLength: 30,
+            maxBufferLength: 50,
+            maxMaxBufferLength: 80,
+            maxFragLookUpTolerance: 0,
+            maxBufferHole: 0,
+            appendErrorMaxRetry: 20,
+            nudgeMaxRetry: 20,
+            manifestLoadingTimeOut: 30000,
+            manifestLoadingMaxRetry: 10,
+            // liveDurationInfinity: false
+        };
+
+        const videoElement = document.getElementById('video');
+
+        videoElement.onerror = function() {
+            onError({
+                code: 1001,
+                message: videoElement.error.message,
+                critical: true
+            });
+        };
+        videoElement.onended = function() {
+            onEnded();
+        };
+        videoElement.onpause = function() {
+            onPropChanged('paused');
+        };
+        videoElement.onplay = function() {
+            onPropChanged('paused');
+        };
+        videoElement.ontimeupdate = function() {
+            onPropChanged('time');
+            onPropChanged('buffered');
+        };
+        videoElement.ondurationchange = function() {
+            onPropChanged('duration');
+        };
+        videoElement.onwaiting = function() {
+            onPropChanged('buffering');
+            onPropChanged('buffered');
+        };
+        videoElement.onseeking = function() {
+            onPropChanged('buffering');
+            onPropChanged('buffered');
+        };
+        videoElement.onseeked = function() {
+            onPropChanged('buffering');
+            onPropChanged('buffered');
+        };
+        videoElement.onstalled = function() {
+            onPropChanged('buffering');
+            onPropChanged('buffered');
+        };
+        videoElement.onplaying = function() {
+            onPropChanged('buffering');
+            onPropChanged('buffered');
+        };
+        videoElement.oncanplay = function() {
+            onPropChanged('buffering');
+            onPropChanged('buffered');
+        };
+        videoElement.canplaythrough = function() {
+            onPropChanged('buffering');
+            onPropChanged('buffered');
+        };
+        videoElement.onloadeddata = function() {
+            onPropChanged('buffering');
+            onPropChanged('buffered');
+        };
+        videoElement.onvolumechange = function() {
+            onPropChanged('volume');
+            onPropChanged('muted');
+        };
+        videoElement.onratechange = function() {
+            onPropChanged('playbackSpeed');
+        };
+
+        var hls = null;
+        let stream = null;
+        let destroyed = false;
+        var observedProps = {
+            stream: false,
+            paused: false,
+            time: false,
+            duration: false,
+            buffering: false,
+            buffered: false,
+            volume: false,
+            muted: false,
+            playbackSpeed: false
+        };
+
+        function emit(event, args) {
+            window.parent.postMessage({ event, args }, '*');
+        }
+
+        function getProp(propName) {
+            switch (propName) {
+                case 'stream': {
+                    return stream;
+                }
+                case 'paused': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    return !!videoElement.paused;
+                }
+                case 'time': {
+                    if (stream === null || videoElement.currentTime === null || !isFinite(videoElement.currentTime)) {
+                        return null;
+                    }
+
+                    return Math.floor(videoElement.currentTime * 1000);
+                }
+                case 'duration': {
+                    if (stream === null || videoElement.duration === null || !isFinite(videoElement.duration)) {
+                        return null;
+                    }
+
+                    return Math.floor(videoElement.duration * 1000);
+                }
+                case 'buffering': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    return videoElement.readyState < videoElement.HAVE_FUTURE_DATA;
+                }
+                case 'buffered': {
+                    if (stream === null) {
+                        return null;
+                    }
+
+                    var time = videoElement.currentTime !== null && isFinite(videoElement.currentTime) ? videoElement.currentTime : 0;
+                    for (var i = 0; i < videoElement.buffered.length; i++) {
+                        if (videoElement.buffered.start(i) <= time && time <= videoElement.buffered.end(i)) {
+                            return Math.floor(videoElement.buffered.end(i) * 1000);
+                        }
+                    }
+
+                    return Math.floor(time * 1000);
+                }
+                case 'volume': {
+                    if (destroyed || videoElement.volume === null || !isFinite(videoElement.volume)) {
+                        return null;
+                    }
+
+                    return Math.floor(videoElement.volume * 100);
+                }
+                case 'muted': {
+                    if (destroyed) {
+                        return null;
+                    }
+
+                    return !!videoElement.muted;
+                }
+                case 'playbackSpeed': {
+                    if (destroyed || videoElement.playbackRate === null || !isFinite(videoElement.playbackRate)) {
+                        return null;
+                    }
+
+                    return videoElement.playbackRate;
+                }
+                default: {
+                    return null;
+                }
+            }
+        }
+
+        function observeProp(propName) {
+            if (observedProps.hasOwnProperty(propName)) {
+                emit('propValue', [propName, getProp(propName)]);
+                observedProps[propName] = true;
+            }
+        }
+
+        function setProp(propName, propValue) {
+            switch (propName) {
+                case 'paused': {
+                    if (stream !== null) {
+                        propValue ? videoElement.pause() : videoElement.play();
+                    }
+
+                    break;
+                }
+                case 'time': {
+                    if (stream !== null && propValue !== null && isFinite(propValue)) {
+                        videoElement.currentTime = parseInt(propValue, 10) / 1000;
+                    }
+
+                    break;
+                }
+                case 'volume': {
+                    if (propValue !== null && isFinite(propValue)) {
+                        videoElement.muted = false;
+                        videoElement.volume = Math.max(0, Math.min(100, parseInt(propValue, 10))) / 100;
+                    }
+
+                    break;
+                }
+                case 'muted': {
+                    videoElement.muted = !!propValue;
+                    break;
+                }
+                case 'playbackSpeed': {
+                    if (propValue !== null && isFinite(propValue)) {
+                        videoElement.playbackRate = parseFloat(propValue);
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        function command(commandName, commandArgs) {
+            switch (commandName) {
+                case 'load': {
+                    command('unload');
+                    if (commandArgs && commandArgs.stream && commandArgs.stream.behaviorHints && typeof commandArgs.stream.behaviorHints.mediaUrl === 'string') {
+                        stream = commandArgs.stream;
+                        onPropChanged('stream');
+                        videoElement.autoplay = typeof commandArgs.autoplay === 'boolean' ? commandArgs.autoplay : true;
+                        videoElement.currentTime = commandArgs.time !== null && isFinite(commandArgs.time) ? parseInt(commandArgs.time, 10) / 1000 : 0;
+                        onPropChanged('paused');
+                        onPropChanged('time');
+                        onPropChanged('duration');
+                        onPropChanged('buffering');
+                        onPropChanged('buffered');
+                        getContentType(stream)
+                            .then(function(contentType) {
+                                if (stream !== commandArgs.stream) {
+                                    return;
+                                }
+
+                                if (contentType === 'application/vnd.apple.mpegurl' && Hls.isSupported()) {
+                                    hls = new Hls(HLS_CONFIG);
+                                    hls.loadSource(stream.behaviorHints.mediaUrl);
+                                    hls.attachMedia(videoElement);
+                                } else {
+                                    videoElement.src = stream.behaviorHints.mediaUrl;
+                                }
+                            })
+                            .catch(function() {
+                                if (stream !== commandArgs.stream) {
+                                    return;
+                                }
+
+                                videoElement.src = stream.behaviorHints.mediaUrl;
+                            });
+                    } else {
+                        onError({
+                            code: 1000,
+                            message: 'Invalid stream',
+                            critical: true,
+                            stream: commandArgs ? commandArgs.stream : null
+                        });
+                    }
+                    break;
+                }
+                case 'unload': {
+                    stream = null;
+                    if (hls !== null) {
+                        hls.removeAllListeners();
+                        hls.detachMedia(videoElement);
+                        hls.destroy();
+                        hls = null;
+                    }
+                    videoElement.removeAttribute('src');
+                    videoElement.load();
+                    videoElement.currentTime = 0;
+                    onPropChanged('stream');
+                    onPropChanged('paused');
+                    onPropChanged('time');
+                    onPropChanged('duration');
+                    onPropChanged('buffering');
+                    onPropChanged('buffered');
+                    break;
+                }
+                case 'destroy': {
+                    command('unload');
+                    destroyed = true;
+                    onPropChanged('volume');
+                    onPropChanged('muted');
+                    onPropChanged('playbackSpeed');
+                    videoElement.onerror = null;
+                    videoElement.onended = null;
+                    videoElement.onpause = null;
+                    videoElement.onplay = null;
+                    videoElement.ontimeupdate = null;
+                    videoElement.ondurationchange = null;
+                    videoElement.onwaiting = null;
+                    videoElement.onseeking = null;
+                    videoElement.onseeked = null;
+                    videoElement.onstalled = null;
+                    videoElement.onplaying = null;
+                    videoElement.oncanplay = null;
+                    videoElement.canplaythrough = null;
+                    videoElement.onloadeddata = null;
+                    videoElement.onvolumechange = null;
+                    videoElement.onratechange = null;
+                    break;
+                }
+            }
+        }
+
+        function onError(error) {
+            emit('error', [error]);
+            if (error.critical) {
+                command('unload');
+            }
+        }
+
+        function onEnded() {
+            emit('ended');
+        }
+
+        function onPropChanged(propName) {
+            if (observedProps[propName]) {
+                emit('propChanged', [propName, getProp(propName)]);
+            }
+        }
+
+        function getContentType(stream) {
+            if (!stream || !stream.behaviorHints || typeof stream.behaviorHints.mediaUrl !== 'string') {
+                return Promise.reject(new Error('Invalid stream parameter!'));
+            }
+
+            if (stream.behaviorHints && stream.behaviorHints.headers && typeof stream.behaviorHints.headers['content-type'] === 'string') {
+                return Promise.resolve(stream.behaviorHints.headers['content-type']);
+            }
+
+            return fetch(stream.behaviorHints.mediaUrl, { method: 'HEAD' })
+                .then(function(resp) {
+                    if (resp.ok) {
+                        return resp.headers.get('content-type');
+                    }
+
+                    throw new Error(resp.status + ' (' + resp.statusText + ')');
+                });
+        }
+
+        window.addEventListener('message', function(event) {
+            var action = event.data || event.message;
+            if (!action) {
+                return;
+            }
+
+            if (action.type === 'observeProp') {
+                observeProp(action.propName)
+            } else if (action.type === 'setProp') {
+                setProp(action.propName, action.propValue);
+            } else if (action.type === 'command') {
+                command(action.commandName, action.commandArgs);
+            }
+        }, false);
+
+        emit('implementationChanged', [MANIFEST]);
+    </script>
+</body>
+
+</html>

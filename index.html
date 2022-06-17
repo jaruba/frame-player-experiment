@@ -25,6 +25,13 @@
         function emit(event, args) {
             window.parent.postMessage({ event, args }, '*');
         }
+        window.parent.postMessage({ event: 'implementationChanged', args: [{
+            name: 'HTMLVideo',
+            external: false,
+            props: ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'audioTracks', 'selectedAudioTrackId', 'subtitlesTracks', 'selectedSubtitlesTrackId', 'subtitlesOffset', 'subtitlesSize', 'subtitlesTextColor', 'subtitlesBackgroundColor', 'subtitlesOutlineColor', 'volume', 'muted', 'playbackSpeed'],
+            commands: ['load', 'unload', 'destroy'],
+            events: ['propValue', 'propChanged', 'ended', 'error', 'subtitlesTrackLoaded', 'audioTrackLoaded']
+        }] }, '*')
 
         function emitPropChanged(propName, propValue) {
             emit('propChanged', [propName, propValue]);
