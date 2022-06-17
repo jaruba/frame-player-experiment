@@ -94,14 +94,14 @@
                     return !video ? false : !!video.paused;
                 }
                 case 'time': {
-                    if (stream === null || video.currentTime === null || !isFinite(video.currentTime)) {
+                    if (stream === null || !video || video.currentTime === null || !isFinite(video.currentTime)) {
                         return null;
                     }
 
                     return Math.floor(video.currentTime * 1000);
                 }
                 case 'duration': {
-                    if (stream === null || video.duration === null || !isFinite(video.duration)) {
+                    if (stream === null || !video || video.duration === null || !isFinite(video.duration)) {
                         return null;
                     }
 
@@ -149,7 +149,7 @@
                     return false;
                 }
                 case 'playbackSpeed': {
-                    if (destroyed || video.playbackRate === null || !isFinite(video.playbackRate)) {
+                    if (destroyed || !video || video.playbackRate === null || !isFinite(video.playbackRate)) {
                         return null;
                     }
 
