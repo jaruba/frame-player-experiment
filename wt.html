@@ -31,7 +31,7 @@
         window.parent.postMessage({ event: 'implementationChanged', args: [{
             name: 'HTMLVideo',
             external: false,
-            props: ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'audioTracks', 'selectedAudioTrackId', 'subtitlesTracks', 'selectedSubtitlesTrackId', 'subtitlesOffset', 'subtitlesSize', 'subtitlesTextColor', 'subtitlesBackgroundColor', 'subtitlesOutlineColor', 'volume', 'muted', 'playbackSpeed'],
+            props: ['stream', 'paused', 'time', 'duration', 'buffering', 'audioTracks', 'selectedAudioTrackId', 'subtitlesTracks', 'selectedSubtitlesTrackId', 'subtitlesOffset', 'subtitlesSize', 'subtitlesTextColor', 'subtitlesBackgroundColor', 'subtitlesOutlineColor', 'volume', 'muted', 'playbackSpeed'],
             commands: ['load', 'unload', 'destroy'],
             events: ['propValue', 'propChanged', 'ended', 'error', 'subtitlesTrackLoaded', 'audioTrackLoaded']
         }] }, '*')
@@ -111,25 +111,9 @@
                         return null;
                     }
 
-                    return !video ? true : false;
+                    return !video ? true : buffering;
 
 //                    return video.readyState < video.HAVE_FUTURE_DATA;
-                }
-                case 'buffered': {
-                    if (stream === null) {
-                        return null;
-                    }
-
-                    return 1;
-
-                    // var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
-                    // for (var i = 0; i < video.buffered.length; i++) {
-                    //     if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
-                    //         return Math.floor(video.buffered.end(i) * 1000);
-                    //     }
-                    // }
-
-                    // return Math.floor(time * 1000);
                 }
                 case 'volume': {
 //                    if (destroyed || video.volume === null || !isFinite(video.volume)) {
@@ -177,6 +161,8 @@
 
         // start video
 
+        var buffering = true;
+
 //        var video = document.getElementById('video');
         var destroyed = false;
 
@@ -203,6 +189,10 @@
                     if (e.data == 'PLAY') {
                         video.paused = false;
                         emitPropChanged('paused', !!video.paused);
+                        if (buffering) {
+                            buffering = false;
+                            emitPropChanged('buffering', buffering);
+                        }
                     } else if (e.data == 'PAUSED') {
                         video.paused = true;
                         emitPropChanged('paused', !!video.paused);
@@ -233,7 +223,7 @@
         window.webtor = window.webtor || [];
         window.webtor.push(opts);
 
-        ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'volume', 'muted', 'playbackSpeed'].forEach((p) => {
+        ['stream', 'paused', 'time', 'duration', 'buffering', 'volume', 'muted', 'playbackSpeed'].forEach((p) => {
             emitPropChanged(p, getProp(p));
         }) 
 
