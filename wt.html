@@ -187,47 +187,49 @@
 
         var stream = { infohash: ih };
 
-            window.webtor = window.webtor || [];
-            window.webtor.push({
-                id: 'video',
-                width: '100%',
-                magnet: ih,
-                on: function (e) {
-                    if (e.name == window.webtor.INITED) {
-                        video = e.player;
+        var opts = {
+            id: 'video',
+            width: '100%',
+            magnet: ih,
+            on: function (e) {
+                if (e.name == window.webtor.INITED) {
+                    video = e.player;
+                    video.paused = false;
+                    emitPropChanged('paused', !!video.paused);
+                    e.player.play();
+                    player.style.display = 'block';
+                }
+                if (e.name == window.webtor.PLAYER_STATUS) {
+                    if (e.data == 'PLAY') {
                         video.paused = false;
                         emitPropChanged('paused', !!video.paused);
-                        e.player.play();
-                        player.style.display = 'block';
+                    } else if (e.data == 'PAUSED') {
+                        video.paused = true;
+                        emitPropChanged('paused', !!video.paused);
                     }
-                    if (e.name == window.webtor.PLAYER_STATUS) {
-                        if (e.data == 'PLAY') {
-                            video.paused = false;
-                            emitPropChanged('paused', !!video.paused);
-                        } else if (e.data == 'PAUSED') {
-                            video.paused = true;
-                            emitPropChanged('paused', !!video.paused);
-                        }
-                        console.log('player status', e.data);
+                    console.log('player status', e.data);
+                }
+                if (e.name == window.webtor.OPEN) {
+                    console.log('player open', e.data);
+                }
+                if (e.name == window.webtor.CURRENT_TIME) {
+                    console.log('player time', parseInt(e.data));
+                    video.currentTime = parseInt(e.data);
+                    var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
+                    if (time) {
+                        emitPropChanged('time', Math.floor(time * 1000));
                     }
-                    if (e.name == window.webtor.OPEN) {
-                        console.log('player open', e.data);
-                    }
-                    if (e.name == window.webtor.CURRENT_TIME) {
-                        console.log('player time', parseInt(e.data));
-                        video.currentTime = parseInt(e.data);
-                        var time = video.currentTime !== null && isFinite(video.currentTime) ? video.currentTime : 0;
-                        if (time) {
-                            emitPropChanged('time', Math.floor(time * 1000));
-                        }
-                    }
-                    if (e.name == window.webtor.DURATION) {
-                        console.log('player duration', parseInt(e.data));
-                        video.duration = parseInt(e.data);
-                        emitPropChanged('duration', Math.floor(video.duration * 1000));
-                    }
-                },
-            });
+                }
+                if (e.name == window.webtor.DURATION) {
+                    console.log('player duration', parseInt(e.data));
+                    video.duration = parseInt(e.data);
+                    emitPropChanged('duration', Math.floor(video.duration * 1000));
+                }
+            },
+        }
+
+        window.webtor = window.webtor || [];
+        window.webtor.push(opts);
 
         ['stream', 'paused', 'time', 'duration', 'buffering', 'buffered', 'volume', 'muted', 'playbackSpeed'].forEach((p) => {
             emitPropChanged(p, getProp(p));
