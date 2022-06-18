@@ -182,7 +182,7 @@ setInterval(function() {
             height: '100%',
             magnet: ih,
             on: function (e) {
-                pushLog(e);
+                pushLog.push(e);
                 if (e.name == window.webtor.INITED) {
                     video = e.player;
                     video.paused = false;
