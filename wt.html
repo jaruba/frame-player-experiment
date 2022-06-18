@@ -186,7 +186,6 @@
                     video.paused = false;
                     emitPropChanged('paused', !!video.paused);
                     e.player.play();
-                    player.style.display = 'block';
                     console.log('init', e.data);
                 }
                 if (e.name == window.webtor.PLAYER_STATUS) {
